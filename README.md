@@ -1,2 +1,2 @@
 # Scheduler
-Search Consultancy exercise: "AM CCA Resource Scheduler Exercise.pdf"
+Search Consultancy exercise: "AM CCA Resource Scheduler Exercise.pdf."
