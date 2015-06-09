@@ -1,0 +1,90 @@
+#Log of all actions and thoughts as I go.
+Read AM CCA Resource Scheduler Exercise.pdf one time through (no note-taking yet).
+	One pool of resources (1-n), n configurable
+	One queue of messages, some group ID
+	Know which message have been sent
+
+Read AM CCA Resource Scheduler Exercise.pdf getting requirements.
+	It reads eclipse -> start eclipse
+	"public interface..." Create empty project
+	New Java Interface "Gateway" with send()
+	New Java Interface "Message" with completed()
+	Factory pattern for the gateways ?
+	Think concurrency / thread-safe
+	New Java class MessageSender (in test package)
+	Keep sent messages (don't allow GC until completed()) -> queue always, then send
+		New Java Class "Msgs2Send", the queue.
+		New Java Class "SentMsgs", keep "in progress" msgs
+	The queue has to be traversable and items can be removed from the middle
+	Triggers for sending:
+		message arrives
+		message is completed (i.e. resource is idle)
+			No need for sleep or while.
+	remember to implement the test cases given.
+	Extra:
+		Cancellation
+		Termination
+		Prioritisation
+	Don't see link to an article
+
+Meat in the classes: start with a message end to end.
+	ResourceScheduler starts MessageSender 
+	MessageSender sends a message.
+		The message comes from test cases
+		Create test cases for 1, 2 and 3 resources. Assume messages arrive faster than they complete
+	Need scheduler: New Java class RsrcSched
+	Need a Message Implementation: New Java class MessageImpl
+	Msg2Send and SentMsgs are only queues... consider scratching classes ("not everything _needs_ to be a class").
+	Minimal system drawing.
+		Since GW hast to call theMessage.completed(), it mus hold reference; so:
+		No need for sent queue, just note that one resource is idle.
+		Wrong!!! need to remember what is "in progress"...
+			but it can be a list of groupID...
+		Better sort the messages by ID on arrival, there will be more time while waiting for an idle resource... and when "completed()," it must be quick to find next msg to send.
+	Move interfaces from exercise (Message and Gateway) to givenAPI package
+	The scheduler could be created a second time... fix with a factory.
+	What is the address of each unit of resources? assume send() to one and that there is a balancer there.
+	RsrcSched.sendMsg() must be synchronized, so the check for idle rsrc is atomic.
+		Aaand the queue add().
+	Placing the Gateway implementation in Test package. Integration with production system will need
+	Assume there are resources to serve this request; need to implement send();
+	Processing of each msg should be of random duration, but then is not possible to automatic test. Assume half a second.
+	Now need the complete() method.
+	First make tests bare bones for the scheduler
+	Use java.util.logging to console
+Might be better to isolate the integration layer in a separated package, to ease integration in production.
+	New package integration
+	Continue with scheduler tests
+		Race condition?
+			Nope!! Logger.Level is global when using the same log and the same console. Set same level everywhere.
+	Write values for the cases to be scheduled
+		play with MAX_INT
+	Disable all cases but those from the spec to start with.
+
+Lost link: msg.completed() must signal "iddle" to the scheduler.
+I'm assuming the gateway also needs the GroupID: I'm sending it through.
+
+	built the queuin in the messages: good old "next" reference.
+	Effectively: there is one queue per groupID.
+	One queueing per groupID... do I want to re-invent the wheel?
+		Use ConcurrentLinkedQueue of MessageWrappers per groupID: tested implementation pays overhead.
+OBS!!! when the last message of a groupID is "sent" the groupID remains "in progress" until completed().
+	Make the class for one groupID.
+	The set of all groupID queues is not a queue: one queue is removed when is empty, not when it is its turn.
+	On adding, need to search for the right groupID queue; beeter use an ArrayList
+	Write tests for adding / removing groupID queues
+	
+Send messages on receiving completed()
+	OBS! Are the groupID Queues removed when empty? Ah! no: it is now.
+	Identified a case that may wrongly leave a message waiting forever: run it on paper
+		It works well, write the testcase.
+Done.
+
+Start running tests
+	Start with only one
+	debugging test cases
+	Completion is not predictable. Check results on sending (this is about respecting the sendin ordering).
+	Forget about used and unused resources. Leave the trafic to the semaphore.
+	All test cases tuned in.
+	
+Deliver.
